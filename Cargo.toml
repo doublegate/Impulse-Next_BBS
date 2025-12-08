@@ -66,7 +66,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # Authentication
 argon2 = "0.5"
 sha2 = "0.10"
-uuid = { version = "1.11", features = ["v4", "serde"] }
+uuid = { version = "1.19", features = ["v4", "serde"] }
 rand = "0.9"
 chrono = { version = "0.4", features = ["serde"] }
 
