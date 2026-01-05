@@ -14,7 +14,7 @@ async-trait = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 toml = "0.8"
-tempfile = "3.14"
+tempfile = "3.24"
 chrono = { version = "0.4", features = ["serde"] }
 tracing = "0.1"
 which = "7.0"

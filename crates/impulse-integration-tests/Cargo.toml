@@ -28,7 +28,7 @@ impulse-config = { path = "../impulse-config" }
 tokio = { workspace = true, features = ["full", "test-util"] }
 
 # Testing infrastructure
-tempfile = "3.14"
+tempfile = "3.24"
 proptest = { workspace = true }
 fake = { version = "2.10", features = ["derive"] }
 criterion = { workspace = true }

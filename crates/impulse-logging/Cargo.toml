@@ -32,9 +32,9 @@ anyhow = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt", "macros", "test-util"] }
-tempfile = "3.8"
+tempfile = "3.24"
 proptest = { workspace = true }
-serial_test = "3.0"
+serial_test = "3.3"
 
 [[bench]]
 name = "logging_benchmarks"
