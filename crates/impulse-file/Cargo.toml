@@ -26,4 +26,4 @@ tempfile = "3"
 hex = "0.4"
 
 # Data structures
-indexmap = "2.8"
+indexmap = "2.13"
