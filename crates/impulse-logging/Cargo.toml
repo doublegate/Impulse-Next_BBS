@@ -21,7 +21,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 
 # Compression
-flate2 = "1.0"
+flate2 = "1.1"
 
 # File system operations
 tokio = { workspace = true, features = ["fs", "time", "sync"] }
@@ -32,9 +32,9 @@ anyhow = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt", "macros", "test-util"] }
-tempfile = "3.8"
+tempfile = "3.25"
 proptest = { workspace = true }
-serial_test = "3.0"
+serial_test = "3.3"
 
 [[bench]]
 name = "logging_benchmarks"
