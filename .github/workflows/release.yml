@@ -106,15 +106,16 @@ jobs:
             target: x86_64-pc-windows-msvc
             archive: zip
 
-          # macOS x86_64 (Intel)
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            archive: tar.gz
-
-          # macOS aarch64 (Apple Silicon)
-          - os: macos-latest
-            target: aarch64-apple-darwin
-            archive: tar.gz
+          # DISABLED: macOS builds removed
+          # # macOS x86_64 (Intel)
+          # - os: macos-latest
+          #   target: x86_64-apple-darwin
+          #   archive: tar.gz
+          #
+          # # macOS aarch64 (Apple Silicon)
+          # - os: macos-latest
+          #   target: aarch64-apple-darwin
+          #   archive: tar.gz
 
     steps:
       - name: Checkout repository
