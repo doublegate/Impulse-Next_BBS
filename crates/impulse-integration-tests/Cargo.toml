@@ -30,7 +30,7 @@ tokio = { workspace = true, features = ["full", "test-util"] }
 # Testing infrastructure
 tempfile = "3.14"
 proptest = { workspace = true }
-fake = { version = "2.10", features = ["derive"] }
+fake = { version = "4.4", features = ["derive"] }
 criterion = { workspace = true }
 
 # Standard dependencies
