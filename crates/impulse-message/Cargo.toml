@@ -16,7 +16,7 @@ thiserror = { workspace = true }
 serde = { workspace = true }
 chrono = { workspace = true }
 unicode-width = "0.2"
-zip = "2.2"  # QWK packet compression
+zip = "6.0"  # QWK packet compression
 csv = "1.3"  # CSV export support
 serde_json = "1.0"  # JSON serialization
 
