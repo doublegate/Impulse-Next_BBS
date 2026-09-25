@@ -76,11 +76,9 @@ impl DownloadStats {
 
     /// Get average download speed (bytes per second)
     pub fn average_speed(&self) -> u64 {
-        if self.total_time_secs > 0 {
-            self.total_bytes / self.total_time_secs
-        } else {
-            0
-        }
+        self.total_bytes
+            .checked_div(self.total_time_secs)
+            .unwrap_or(0)
     }
 
     /// Get resume rate as percentage

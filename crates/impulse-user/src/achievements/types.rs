@@ -470,11 +470,10 @@ impl AchievementProgress {
     /// ```
     #[must_use]
     pub fn percentage(&self) -> u8 {
-        if self.required == 0 {
-            100
-        } else {
-            ((self.current * 100 / self.required).min(100)) as u8
-        }
+        // A zero requirement is trivially complete.
+        (self.current * 100)
+            .checked_div(self.required)
+            .map_or(100, |pct| pct.min(100) as u8)
     }
 }
 
