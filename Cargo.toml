@@ -1,6 +1,7 @@
 [workspace]
-# Resolver 3 resolves dependencies against `rust-version` (MSRV-aware fallback),
-# so `cargo update` cannot select a crate that breaks the 1.88 MSRV job.
+# Resolver 3 prefers dependency versions compatible with `rust-version` (MSRV-aware
+# fallback). It can still pick an incompatible version when no compatible one satisfies
+# a requirement, so the CI MSRV job on Rust 1.88 remains the actual guarantee.
 resolver = "3"
 members = [
     "crates/impulse-core",

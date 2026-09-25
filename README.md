@@ -724,31 +724,31 @@ Impulse-Next_BBS/
 
 **Production:**
 
-- `tokio` 1.47 - Async runtime (full features)
+- `tokio` 1.53 - Async runtime (full features)
 - `tokio-util` 0.7 - Async utilities
 - `crossterm` 0.29 - Terminal I/O
 - `serde` 1.0 - Serialization framework
 - `serde_json` 1.0 - JSON support
-- `toml` 0.9 - Configuration files (Dependabot update)
+- `toml` 1.1 - Configuration files
 - `bincode` 2.0 - Binary serialization (migrated from 1.3)
 - `binrw` 0.15 - Binary parsing
 - `thiserror` 2.0 - Error handling
 - `anyhow` 1.0 - Error context
 - `tracing` 0.1 - Structured logging
-- `argon2` 0.5 - Password hashing
-- `sha2` 0.10 - Session token generation
-- `rand` 0.9 - Secure randomness (Dependabot update)
-- `colored` 3.0 - Terminal colors (Dependabot update)
+- `argon2` 0.6 - Password hashing
+- `sha2` 0.11 - Session token generation
+- `rand` 0.10 - Secure randomness
+- `colored` 3.1 - Terminal colors
 - `notify` 8.2 - File system watching (Dependabot update)
-- `sqlx` 0.8 - Database access
+- `sqlx` 0.8 - Database access (0.9 needs Rust 1.94, above the MSRV)
 - `axum` 0.8 - Web framework
-- `bitflags` 2.6 - Pascal set types
+- `bitflags` 2.13 - Pascal set types
 
 **Development:**
 
-- `proptest` 1.5 - Property-based testing
-- `serial_test` 3.0 - Test isolation
-- `tempfile` 3.8 - Temporary file handling
+- `proptest` 1.11 - Property-based testing
+- `serial_test` 3.5 - Test isolation (4.x needs Rust 1.93.1)
+- `tempfile` 3.27 - Temporary file handling
 
 **Build Optimization:**
 

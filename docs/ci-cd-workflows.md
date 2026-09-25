@@ -96,7 +96,7 @@ lint ──┬─→ test ──┬─→ build
 - **Duration:** ~1-2 minutes
 - **Purpose:** Check for security vulnerabilities
 - **Steps:**
-  - Install/cache cargo-audit (v0.20.0)
+  - Install/cache cargo-audit (v0.22.2)
   - Run security audit on dependencies
 - **Caching:** Separate cache for cargo-audit binary
 - **Dependencies:** Requires `lint` to pass (parallel with test)
@@ -104,9 +104,9 @@ lint ──┬─→ test ──┬─→ build
 #### 7. **msrv** (Minimum Rust Version)
 - **Platform:** ubuntu-latest
 - **Duration:** ~2-3 minutes
-- **Purpose:** Verify compatibility with MSRV (1.85)
+- **Purpose:** Verify compatibility with MSRV (1.88)
 - **Steps:**
-  - Install Rust 1.85 toolchain
+  - Install Rust 1.88 toolchain
   - Check workspace builds with MSRV
 - **Caching:** Shared cache key "msrv"
 - **Dependencies:** Requires `lint` to pass (parallel with test)

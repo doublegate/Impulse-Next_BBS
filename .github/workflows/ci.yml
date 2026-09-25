@@ -169,8 +169,12 @@ jobs:
 
       # Run only lightweight benchmarks, exclude expensive integration test benchmarks
       - name: Run core benchmarks
+        # --bench '*': only the criterion [[bench]] targets understand --output-format; the
+        # libtest harness of every lib/bin target rejects it (--benches would include them).
+        # pipefail: without it the step's exit status is tee's, which hid those failures.
         run: |
-          cargo bench --workspace --no-fail-fast \
+          set -o pipefail
+          cargo bench --workspace --bench '*' --no-fail-fast \
             --exclude impulse-integration-tests \
             -- --output-format bencher | tee benchmark_results.txt
 
