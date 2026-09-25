@@ -470,11 +470,11 @@ impl AchievementProgress {
     /// ```
     #[must_use]
     pub fn percentage(&self) -> u8 {
-        if self.required == 0 {
-            100
-        } else {
-            ((self.current * 100 / self.required).min(100)) as u8
-        }
+        // Widen to u128 so `current * 100` cannot overflow for large u64 values.
+        // A zero requirement is trivially complete.
+        (u128::from(self.current) * 100)
+            .checked_div(u128::from(self.required))
+            .map_or(100, |pct| pct.min(100) as u8)
     }
 }
 
@@ -572,6 +572,21 @@ mod tests {
         user.stats.record_upload(75, 5000);
         let progress = AchievementProgress::calculate(&user, Achievement::Upload100);
         assert_eq!(progress.percentage(), 100);
+    }
+
+    #[test]
+    fn test_progress_percentage_extremes() {
+        let at = |current, required| AchievementProgress {
+            achievement: Achievement::Upload100,
+            current,
+            required,
+        };
+        // A zero requirement counts as complete.
+        assert_eq!(at(0, 0).percentage(), 100);
+        // `current * 100` would overflow u64 here; the result must still be exact.
+        assert_eq!(at(u64::MAX, u64::MAX).percentage(), 100);
+        assert_eq!(at(u64::MAX / 2, u64::MAX).percentage(), 49);
+        assert_eq!(at(u64::MAX, 1).percentage(), 100);
     }
 
     #[test]

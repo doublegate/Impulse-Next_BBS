@@ -72,7 +72,7 @@ lint ──┬─→ test ──┬─→ build
 - **Duration:** ~3-4 minutes
 - **Purpose:** Generate code coverage reports
 - **Steps:**
-  - Install/cache cargo-tarpaulin (v0.31.0)
+  - Install/cache cargo-tarpaulin (v0.37.4)
   - Generate coverage with 300s timeout
   - Upload to Codecov
 - **Caching:**
@@ -96,7 +96,7 @@ lint ──┬─→ test ──┬─→ build
 - **Duration:** ~1-2 minutes
 - **Purpose:** Check for security vulnerabilities
 - **Steps:**
-  - Install/cache cargo-audit (v0.20.0)
+  - Install/cache cargo-audit (v0.22.2)
   - Run security audit on dependencies
 - **Caching:** Separate cache for cargo-audit binary
 - **Dependencies:** Requires `lint` to pass (parallel with test)
@@ -104,9 +104,9 @@ lint ──┬─→ test ──┬─→ build
 #### 7. **msrv** (Minimum Rust Version)
 - **Platform:** ubuntu-latest
 - **Duration:** ~2-3 minutes
-- **Purpose:** Verify compatibility with MSRV (1.85)
+- **Purpose:** Verify compatibility with MSRV (1.88)
 - **Steps:**
-  - Install Rust 1.85 toolchain
+  - Install Rust 1.88 toolchain
   - Check workspace builds with MSRV
 - **Caching:** Shared cache key "msrv"
 - **Dependencies:** Requires `lint` to pass (parallel with test)
@@ -406,19 +406,18 @@ gh release download v0.2.0 -p "impulse-server-*.tar.gz"
 The workflows use specific versions of tools and actions:
 
 **GitHub Actions:**
-- `actions/checkout@v6` - Checkout code
-- `actions/cache@v4` - Generic caching
-- `actions/upload-artifact@v4` - Upload artifacts
-- `actions/download-artifact@v4` - Download artifacts
+- `actions/checkout@v7` - Checkout code
+- `actions/cache@v6` - Generic caching
+- `actions/upload-artifact@v7` - Upload artifacts
+- `actions/download-artifact@v8` - Download artifacts
 - `dtolnay/rust-toolchain@stable` - Install Rust
 - `Swatinem/rust-cache@v2` - Rust-specific caching
-- `codecov/codecov-action@v5` - Upload coverage
-- `actions/github-script@v7` - Run JavaScript
-- `softprops/action-gh-release@v2` - Create releases
+- `codecov/codecov-action@v7` - Upload coverage
+- `softprops/action-gh-release@v3` - Create releases
 
 **Rust Tools:**
-- `cargo-tarpaulin@0.31.0` - Coverage generation
-- `cargo-audit@0.20.0` - Security auditing
+- `cargo-tarpaulin@0.37.4` - Coverage generation
+- `cargo-audit@0.22.2` - Security auditing
 
 **Update Schedule:**
 - Dependabot handles GitHub Actions updates weekly

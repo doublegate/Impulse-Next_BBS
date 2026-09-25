@@ -275,7 +275,7 @@ This project aims to:
 - ✅ Code coverage baseline: 64.51% (1018/1578 lines)
 - ✅ Integration test framework (tests/common helpers)
 - ✅ Property-based testing infrastructure (proptest 1.5)
-- ✅ Performance benchmarking suite (criterion 0.5)
+- ✅ Performance benchmarking suite (criterion 0.8)
 - ✅ 7 authentication benchmarks tracking critical paths
 - ✅ CI integration (Codecov, artifact storage)
 - ✅ Test fixtures and shared utilities
@@ -461,7 +461,7 @@ All 8 sprints completed including:
 ### Modern Enhancements
 
 - **Multi-Protocol Support**: Telnet, SSH (planned), WebSocket (planned), REST API (planned)
-- **Async Architecture**: Tokio 1.47 async runtime for concurrent session handling
+- **Async Architecture**: Tokio 1.53 async runtime for concurrent session handling
 - **Modern Storage**: SQLite/PostgreSQL (planned) with Pascal binary format compatibility
 - **Security**: Argon2id password hashing (19 MiB, 2 iterations), SHA-256 session tokens, audit logging
 - **Cloud-Ready**: Docker, Kubernetes, containerized deployment (planned)
@@ -624,7 +624,7 @@ The project uses GitHub Actions with 5 jobs:
 1. **Lint**: `cargo clippy` (0 warnings enforced) + `cargo fmt` checks
 2. **Test**: `cargo test --workspace` on 3 platforms (Linux, Windows, macOS)
 3. **Build**: `cargo build --workspace --release` on 3 platforms
-4. **Coverage**: cargo-tarpaulin 0.31 + Codecov integration (baseline: 64.51%)
+4. **Coverage**: cargo-tarpaulin 0.37 + Codecov integration (baseline: 64.51%)
 5. **Benchmark**: criterion benchmarks with artifact storage (7 auth benchmarks)
 
 **Platform Matrix:** ubuntu-latest, windows-latest, macos-latest
@@ -718,37 +718,37 @@ Impulse-Next_BBS/
 
 - **Language**: Rust 2024 edition
 - **Minimum Version**: Rust 1.88+ (required by home@0.5.12)
-- **Async Runtime**: Tokio 1.47
+- **Async Runtime**: Tokio 1.53
 
 ### Key Dependencies
 
 **Production:**
 
-- `tokio` 1.47 - Async runtime (full features)
+- `tokio` 1.53 - Async runtime (full features)
 - `tokio-util` 0.7 - Async utilities
 - `crossterm` 0.29 - Terminal I/O
 - `serde` 1.0 - Serialization framework
 - `serde_json` 1.0 - JSON support
-- `toml` 0.9 - Configuration files (Dependabot update)
+- `toml` 1.1 - Configuration files
 - `bincode` 2.0 - Binary serialization (migrated from 1.3)
 - `binrw` 0.15 - Binary parsing
 - `thiserror` 2.0 - Error handling
 - `anyhow` 1.0 - Error context
 - `tracing` 0.1 - Structured logging
-- `argon2` 0.5 - Password hashing
-- `sha2` 0.10 - Session token generation
-- `rand` 0.9 - Secure randomness (Dependabot update)
-- `colored` 3.0 - Terminal colors (Dependabot update)
+- `argon2` 0.6 - Password hashing
+- `sha2` 0.11 - Session token generation
+- `rand` 0.10 - Secure randomness
+- `colored` 3.1 - Terminal colors
 - `notify` 8.2 - File system watching (Dependabot update)
-- `sqlx` 0.8 - Database access
+- `sqlx` 0.8 - Database access (0.9 needs Rust 1.94, above the MSRV)
 - `axum` 0.8 - Web framework
-- `bitflags` 2.6 - Pascal set types
+- `bitflags` 2.13 - Pascal set types
 
 **Development:**
 
-- `proptest` 1.5 - Property-based testing
-- `serial_test` 3.0 - Test isolation
-- `tempfile` 3.8 - Temporary file handling
+- `proptest` 1.11 - Property-based testing
+- `serial_test` 3.5 - Test isolation (4.x needs Rust 1.93.1)
+- `tempfile` 3.27 - Temporary file handling
 
 **Build Optimization:**
 

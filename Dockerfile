@@ -1,5 +1,5 @@
 # Dockerfile for Impulse BBS Automated Builds
-FROM ubuntu:20.04
+FROM ubuntu:24.04
 
 # Avoid interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive

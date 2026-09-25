@@ -44,13 +44,7 @@ pub mod lockout;
 pub mod rate_limit;
 pub mod validation;
 
-use argon2::{
-    Argon2,
-    password_hash::{
-        PasswordHash, PasswordHasher as Argon2PasswordHasher, PasswordVerifier, SaltString,
-        rand_core::OsRng,
-    },
-};
+use argon2::{Argon2, PasswordHash, PasswordHasher as Argon2PasswordHasher, PasswordVerifier};
 use impulse_types::{
     Error,
     user::{User, UserId},
@@ -101,7 +95,13 @@ impl SessionToken {
         use sha2::{Digest, Sha256};
         let random_bytes: [u8; 32] = rand::random();
         let hash = Sha256::digest(random_bytes);
-        SessionToken(format!("{:x}", hash))
+        // sha2 0.11 digests no longer implement `LowerHex`; encode byte by byte.
+        let hex = hash.iter().fold(String::with_capacity(64), |mut acc, b| {
+            use std::fmt::Write as _;
+            let _ = write!(acc, "{b:02x}");
+            acc
+        });
+        SessionToken(hex)
     }
 
     /// Get the token string
@@ -217,10 +217,9 @@ impl PasswordHasher {
     ///
     /// Returns `AuthError::HashingError` if hashing fails
     pub fn hash_password(&self, password: &str) -> Result<String, AuthError> {
-        let salt = SaltString::generate(&mut OsRng);
-        let password_hash =
-            Argon2PasswordHasher::hash_password(&self.argon2, password.as_bytes(), &salt)
-                .map_err(|e| AuthError::HashingError(e.to_string()))?;
+        // argon2 0.6 draws a 16-byte salt from the OS RNG (its `getrandom` feature).
+        let password_hash = Argon2PasswordHasher::hash_password(&self.argon2, password.as_bytes())
+            .map_err(|e| AuthError::HashingError(e.to_string()))?;
         Ok(password_hash.to_string())
     }
 
@@ -811,6 +810,40 @@ mod tests {
         // Both should verify correctly
         assert!(hasher.verify_password(password, &hash1).is_ok());
         assert!(hasher.verify_password(password, &hash2).is_ok());
+    }
+
+    /// Hashes stored before the argon2 0.5 -> 0.6 upgrade must keep verifying.
+    /// This PHC string was produced by argon2 0.5.3 (`SaltString::generate` +
+    /// `Argon2::default()`), which is what `hash_password` used until then.
+    #[test]
+    fn test_verifies_hash_from_argon2_0_5() {
+        let legacy = "$argon2id$v=19$m=19456,t=2,p=1$Wp2JvjCIQZh82WWD8MlDjA$\
+                      WVN+hmV71NsV4gQGfElEqvSzq/L0kjx3WYLGA2ieQEk";
+        let hasher = PasswordHasher::new();
+        assert!(hasher.verify_password("legacy-pass-0.5", legacy).is_ok());
+        assert!(hasher.verify_password("legacy-pass-0.6", legacy).is_err());
+    }
+
+    /// New hashes keep the same PHC shape and default parameters as before.
+    #[test]
+    fn test_hash_format_unchanged() {
+        let hash = PasswordHasher::new().hash_password("shape").unwrap();
+        assert!(
+            hash.starts_with("$argon2id$v=19$m=19456,t=2,p=1$"),
+            "{hash}"
+        );
+    }
+
+    #[test]
+    fn test_session_token_is_64_lowercase_hex() {
+        let token = SessionToken::new();
+        assert_eq!(token.as_str().len(), 64);
+        assert!(
+            token
+                .as_str()
+                .chars()
+                .all(|c| c.is_ascii_digit() || ('a'..='f').contains(&c))
+        );
     }
 
     #[test]

@@ -81,7 +81,7 @@ async fn test_password_hashing(fixture: &Arc<BbsTestFixture>) -> Result<()> {
 
 /// Generate a cryptographically secure session token
 fn generate_session_token() -> String {
-    use rand::Rng;
+    use rand::RngExt;
     let mut rng = rand::rng();
     let bytes: Vec<u8> = (0..32).map(|_| rng.random::<u8>()).collect();
     hex::encode(bytes)

@@ -7,7 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Nothing yet.
+### Changed
+- Consolidated dependency update (supersedes Dependabot PRs #16-#21, #29, #32, #33, #36-#40, #44).
+  Major bumps: tokio-tungstenite 0.24 -> 0.30, toml 0.8/0.9 -> 1.1, which 7 -> 8, zip 2 -> 8,
+  fake 2 -> 5, criterion 0.5 -> 0.8, argon2 0.5 -> 0.6, sha2 0.10 -> 0.11, rand 0.9 -> 0.10,
+  tower-http 0.6 -> 0.7. Every other dependency moved to its latest MSRV-compatible release
+  (tokio 1.53, uuid 1.26, clap 4.6, proptest 1.11, ...).
+- Workspace resolver `2` -> `3`: dependency resolution now prefers versions compatible with
+  `rust-version` (without it `cargo update` selected `aes` 0.9.3, which requires Rust 1.89). It
+  falls back to an incompatible version only when no compatible one satisfies a requirement,
+  so the Rust 1.88 CI job remains the compatibility gate.
+- GitHub Actions: checkout v7, cache v6, upload-artifact v7, download-artifact v8,
+  codecov-action v7, action-gh-release v3. CI tools: cargo-tarpaulin 0.37.4, cargo-audit 0.22.2.
+- Legacy Pascal build image: `ubuntu:20.04` (end of standard support) -> `ubuntu:24.04`; the
+  DOSBox build produces the same `IMP.EXE`/`IMP.OVR` on both.
+- Code updated for the new APIs: tungstenite `Utf8Bytes`/`Bytes` message payloads, argon2 0.6
+  salt generation inside `hash_password`, sha2 0.11 digests (no `LowerHex`), rand 0.10
+  `RngExt`, and `std::hint::black_box` in benchmarks.
+
+### Fixed
+- Clippy 1.98 `manual_checked_ops` errors in `impulse-file` and `impulse-user`, which had kept
+  CI's Lint job (and every job behind it) red on `main`.
+- CI tool caches no longer fall back to an older cached `cargo-tarpaulin`/`cargo-audit` via a
+  prefix `restore-keys`, which would have silently skipped installing the pinned version.
+- `AchievementProgress::percentage` computes in `u128`, so a large `current` can no longer overflow
+  `current * 100` (panic in debug, wrong result in release).
+- The main-only benchmark job passed `--output-format bencher` to every lib/bin libtest harness,
+  which rejects it; the failure was hidden because the step piped into `tee` without `pipefail`.
+  It now runs only the `[[bench]]` targets (`--bench '*'`) under `set -o pipefail`.
+
+### Security
+- `cargo audit`: 3 vulnerabilities -> 0 (bytes RUSTSEC-2026-0007, time RUSTSEC-2026-0009,
+  crossbeam-epoch RUSTSEC-2026-0204), plus the rsa 0.9.10 and rand soundness updates. This is
+  with CI's existing `--ignore RUSTSEC-2023-0071` (rsa Marvin timing side-channel, no fixed
+  release; rsa is listed in `Cargo.lock` only via `sqlx-mysql`, which is not compiled because
+  the `mysql` feature is off), which is unchanged.
+
+### Held back
+- `sqlx` 0.8 (0.9 requires Rust 1.94) and `serial_test` 3 (4 requires Rust 1.93.1): MSRV is 1.88.
+- `bincode` 2.0.1: 3.0.0 is a tombstone release whose only content is `compile_error!`.
+  Upstream is unmaintained (RUSTSEC-2025-0141); it is a dev-dependency of `impulse-types` only.
+- `aes` 0.9.2 (transitive via zip): 0.9.3 requires Rust 1.89.
 
 ---
 

@@ -6,7 +6,8 @@
 //! - FILE_ID.DIZ extraction
 //! - File area statistics
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
+use std::hint::black_box;
 use impulse_file::{
     manager::InMemoryFileAreaManager,
     traits::FileAreaManager,

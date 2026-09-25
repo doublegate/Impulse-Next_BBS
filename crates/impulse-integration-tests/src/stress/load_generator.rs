@@ -1,7 +1,7 @@
 //! Load generator for concurrent user simulation
 
 use anyhow::Result;
-use rand::Rng;
+use rand::RngExt;
 use std::sync::Arc;
 use std::time::Instant;
 use tokio::task::JoinSet;
