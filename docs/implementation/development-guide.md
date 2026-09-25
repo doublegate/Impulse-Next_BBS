@@ -279,7 +279,7 @@ ratatui = "0.29"
 
 # Development dependencies
 proptest = "1.0"
-criterion = "0.5"
+criterion = "0.8"
 ```
 
 ### Common Build Commands

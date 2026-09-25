@@ -72,7 +72,7 @@ lint ──┬─→ test ──┬─→ build
 - **Duration:** ~3-4 minutes
 - **Purpose:** Generate code coverage reports
 - **Steps:**
-  - Install/cache cargo-tarpaulin (v0.31.0)
+  - Install/cache cargo-tarpaulin (v0.37.4)
   - Generate coverage with 300s timeout
   - Upload to Codecov
 - **Caching:**
@@ -406,19 +406,18 @@ gh release download v0.2.0 -p "impulse-server-*.tar.gz"
 The workflows use specific versions of tools and actions:
 
 **GitHub Actions:**
-- `actions/checkout@v6` - Checkout code
-- `actions/cache@v4` - Generic caching
-- `actions/upload-artifact@v4` - Upload artifacts
-- `actions/download-artifact@v4` - Download artifacts
+- `actions/checkout@v7` - Checkout code
+- `actions/cache@v6` - Generic caching
+- `actions/upload-artifact@v7` - Upload artifacts
+- `actions/download-artifact@v8` - Download artifacts
 - `dtolnay/rust-toolchain@stable` - Install Rust
 - `Swatinem/rust-cache@v2` - Rust-specific caching
-- `codecov/codecov-action@v5` - Upload coverage
-- `actions/github-script@v7` - Run JavaScript
-- `softprops/action-gh-release@v2` - Create releases
+- `codecov/codecov-action@v7` - Upload coverage
+- `softprops/action-gh-release@v3` - Create releases
 
 **Rust Tools:**
-- `cargo-tarpaulin@0.31.0` - Coverage generation
-- `cargo-audit@0.20.0` - Security auditing
+- `cargo-tarpaulin@0.37.4` - Coverage generation
+- `cargo-audit@0.22.2` - Security auditing
 
 **Update Schedule:**
 - Dependabot handles GitHub Actions updates weekly

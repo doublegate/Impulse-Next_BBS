@@ -2,9 +2,10 @@
 //!
 //! Measures the performance of password hashing and session management.
 
-use criterion::{BenchmarkId, Criterion, black_box, criterion_group, criterion_main};
+use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use impulse_auth::{PasswordHasher, SessionManager};
 use impulse_types::user::UserId;
+use std::hint::black_box;
 use std::time::Duration;
 
 fn benchmark_password_hashing(c: &mut Criterion) {

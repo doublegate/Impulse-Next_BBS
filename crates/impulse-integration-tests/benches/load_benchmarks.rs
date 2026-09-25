@@ -2,8 +2,9 @@
 //!
 //! Run with: cargo bench --package impulse-integration-tests
 
-use criterion::{Criterion, black_box, criterion_group, criterion_main};
+use criterion::{Criterion, criterion_group, criterion_main};
 use impulse_integration_tests::{fixtures::BbsTestFixture, stress::LoadGenerator};
+use std::hint::black_box;
 
 /// Benchmark user creation
 fn benchmark_user_creation(c: &mut Criterion) {

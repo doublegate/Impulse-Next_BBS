@@ -74,13 +74,10 @@ impl Connection for WebSocketConnection {
 
     async fn send_text(&mut self, data: &str) -> Result<(), ConnectionError> {
         let mut stream = self.stream.lock().await;
-        stream
-            .send(Message::Text(data.to_string()))
-            .await
-            .map_err(|e| {
-                *self.connected.blocking_lock() = false;
-                ConnectionError::WebSocket(format!("Failed to send text: {}", e))
-            })?;
+        stream.send(Message::Text(data.into())).await.map_err(|e| {
+            *self.connected.blocking_lock() = false;
+            ConnectionError::WebSocket(format!("Failed to send text: {}", e))
+        })?;
 
         debug!(remote = %self.remote_addr, "Sent text message");
         Ok(())
@@ -89,7 +86,7 @@ impl Connection for WebSocketConnection {
     async fn send_bytes(&mut self, data: &[u8]) -> Result<(), ConnectionError> {
         let mut stream = self.stream.lock().await;
         stream
-            .send(Message::Binary(data.to_vec()))
+            .send(Message::Binary(data.to_vec().into()))
             .await
             .map_err(|e| {
                 *self.connected.blocking_lock() = false;
@@ -107,11 +104,11 @@ impl Connection for WebSocketConnection {
             Some(Ok(msg)) => match msg {
                 Message::Text(text) => {
                     debug!(remote = %self.remote_addr, "Received text message");
-                    Ok(Some(text.into_bytes()))
+                    Ok(Some(text.as_bytes().to_vec()))
                 }
                 Message::Binary(data) => {
                     debug!(remote = %self.remote_addr, bytes = data.len(), "Received binary message");
-                    Ok(Some(data))
+                    Ok(Some(data.to_vec()))
                 }
                 Message::Ping(data) => {
                     // Respond to ping with pong

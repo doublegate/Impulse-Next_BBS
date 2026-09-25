@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -57,7 +57,7 @@ jobs:
         os: [ubuntu-latest, windows-latest]  # macos-latest disabled
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -85,7 +85,7 @@ jobs:
         os: [ubuntu-latest, windows-latest]  # DISABLED: macOS builds removed
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -109,7 +109,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -121,24 +121,24 @@ jobs:
           cache-on-failure: true
 
       - name: Cache cargo-tarpaulin
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cargo/bin/cargo-tarpaulin
-          key: ${{ runner.os }}-cargo-tarpaulin-0.31.0
-          restore-keys: |
-            ${{ runner.os }}-cargo-tarpaulin-
+          # Exact-version key only: a prefix restore-key would restore an older
+          # binary, and the install step below would then skip the pinned version.
+          key: ${{ runner.os }}-cargo-tarpaulin-0.37.4
 
       - name: Install cargo-tarpaulin
         run: |
           if ! command -v cargo-tarpaulin &> /dev/null; then
-            cargo install cargo-tarpaulin --version 0.31.0
+            cargo install cargo-tarpaulin --version 0.37.4
           fi
 
       - name: Generate coverage
         run: cargo tarpaulin --workspace --out Xml --output-dir coverage --timeout 300
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           files: ./coverage/cobertura.xml
           fail_ci_if_error: false
@@ -156,7 +156,7 @@ jobs:
     timeout-minutes: 15  # Prevent runaway benchmarks
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -175,7 +175,7 @@ jobs:
             -- --output-format bencher | tee benchmark_results.txt
 
       - name: Store benchmark results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: benchmark-results
@@ -192,23 +192,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
       - name: Cache cargo-audit
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cargo/bin/cargo-audit
-          key: ${{ runner.os }}-cargo-audit-0.22.0
-          restore-keys: |
-            ${{ runner.os }}-cargo-audit-
+          # Exact-version key only: a prefix restore-key would restore an older
+          # binary, and the install step below would then skip the pinned version.
+          key: ${{ runner.os }}-cargo-audit-0.22.2
 
       - name: Install cargo-audit
         run: |
           if ! command -v cargo-audit &> /dev/null; then
-            cargo install cargo-audit --version 0.22.0
+            cargo install cargo-audit --version 0.22.2
           fi
 
       - name: Run security audit
@@ -221,7 +221,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install Rust MSRV toolchain
         uses: dtolnay/rust-toolchain@master

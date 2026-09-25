@@ -13,11 +13,11 @@ tokio = { workspace = true, features = ["process", "io-util", "fs", "sync", "tim
 async-trait = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
-toml = "0.8"
-tempfile = "3.14"
+toml = "1.1"
+tempfile = "3.27"
 chrono = { version = "0.4", features = ["serde"] }
 tracing = "0.1"
-which = "7.0"
+which = "8.0"
 
 [dev-dependencies]
 tokio-test = "0.4"

@@ -275,7 +275,7 @@ This project aims to:
 - ✅ Code coverage baseline: 64.51% (1018/1578 lines)
 - ✅ Integration test framework (tests/common helpers)
 - ✅ Property-based testing infrastructure (proptest 1.5)
-- ✅ Performance benchmarking suite (criterion 0.5)
+- ✅ Performance benchmarking suite (criterion 0.8)
 - ✅ 7 authentication benchmarks tracking critical paths
 - ✅ CI integration (Codecov, artifact storage)
 - ✅ Test fixtures and shared utilities
@@ -461,7 +461,7 @@ All 8 sprints completed including:
 ### Modern Enhancements
 
 - **Multi-Protocol Support**: Telnet, SSH (planned), WebSocket (planned), REST API (planned)
-- **Async Architecture**: Tokio 1.47 async runtime for concurrent session handling
+- **Async Architecture**: Tokio 1.53 async runtime for concurrent session handling
 - **Modern Storage**: SQLite/PostgreSQL (planned) with Pascal binary format compatibility
 - **Security**: Argon2id password hashing (19 MiB, 2 iterations), SHA-256 session tokens, audit logging
 - **Cloud-Ready**: Docker, Kubernetes, containerized deployment (planned)
@@ -624,7 +624,7 @@ The project uses GitHub Actions with 5 jobs:
 1. **Lint**: `cargo clippy` (0 warnings enforced) + `cargo fmt` checks
 2. **Test**: `cargo test --workspace` on 3 platforms (Linux, Windows, macOS)
 3. **Build**: `cargo build --workspace --release` on 3 platforms
-4. **Coverage**: cargo-tarpaulin 0.31 + Codecov integration (baseline: 64.51%)
+4. **Coverage**: cargo-tarpaulin 0.37 + Codecov integration (baseline: 64.51%)
 5. **Benchmark**: criterion benchmarks with artifact storage (7 auth benchmarks)
 
 **Platform Matrix:** ubuntu-latest, windows-latest, macos-latest
@@ -718,7 +718,7 @@ Impulse-Next_BBS/
 
 - **Language**: Rust 2024 edition
 - **Minimum Version**: Rust 1.88+ (required by home@0.5.12)
-- **Async Runtime**: Tokio 1.47
+- **Async Runtime**: Tokio 1.53
 
 ### Key Dependencies
 
