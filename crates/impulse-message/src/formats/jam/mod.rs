@@ -471,4 +471,63 @@ mod tests {
         assert_eq!(base.jdt_path(), PathBuf::from("/msg/general.jdt"));
         assert_eq!(base.jdx_path(), PathBuf::from("/msg/general.jdx"));
     }
+
+    #[tokio::test]
+    async fn test_jam_multi_message_read_search_and_thread() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let base_path = temp_dir.path().join("general");
+
+        let writer = JamWriter::new(&base_path);
+        writer.initialize_base().await.unwrap();
+
+        let mut base = JamMessageBase::new(&base_path);
+
+        let msg1 = NewMessage::new("Alice", "Bob", "First Topic").with_body("Hello from Alice");
+        let num1 = base.post_message(msg1).await.unwrap();
+        assert_eq!(num1, 1);
+
+        let msg2 = NewMessage::new("Bob", "Alice", "Second Topic").with_body("Hello from Bob");
+        let num2 = base.post_message(msg2).await.unwrap();
+        assert_eq!(num2, 2);
+
+        let reply = NewMessage::new("Carol", "Alice", "First Topic").with_body("Reply from Carol");
+        let num3 = base.reply_to_message(1, reply).await.unwrap();
+        assert_eq!(num3, 3);
+
+        // Read each message by number and verify distinct headers and bodies
+        let read1 = base.read_message(1).await.unwrap();
+        assert_eq!(read1.header.from, "Alice");
+        assert_eq!(read1.body, "Hello from Alice");
+
+        let read2 = base.read_message(2).await.unwrap();
+        assert_eq!(read2.header.from, "Bob");
+        assert_eq!(read2.body, "Hello from Bob");
+
+        let read3 = base.read_message(3).await.unwrap();
+        assert_eq!(read3.header.from, "Carol");
+        assert_eq!(read3.header.reply_to, Some(1));
+
+        // Out-of-bounds message numbers return MessageNotFound
+        assert!(matches!(
+            base.read_message(0).await,
+            Err(MessageError::MessageNotFound(0))
+        ));
+        assert!(matches!(
+            base.read_message(99).await,
+            Err(MessageError::MessageNotFound(99))
+        ));
+
+        // Search by sender
+        let bob_matches = base
+            .search(&SearchCriteria::new().with_from("Bob"))
+            .await
+            .unwrap();
+        assert_eq!(bob_matches, vec![2]);
+
+        // Thread lookup for a reply message (msg_num > 1)
+        let thread3 = base.get_thread(3).await.unwrap();
+        assert_eq!(thread3.root_msg, 3);
+        assert_eq!(thread3.parent_id, Some(1));
+        assert_eq!(thread3.depth, 1);
+    }
 }
