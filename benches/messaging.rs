@@ -7,14 +7,13 @@
 //! - Search operations
 //! - Thread building
 
-use criterion::{criterion_group, criterion_main, Criterion};
-use std::hint::black_box;
+use criterion::{Criterion, criterion_group, criterion_main};
 use impulse_message::{
-    formats::JamMessageBase,
+    formats::{JamMessageBase, jam::JamWriter},
     traits::MessageBase,
     types::{NewMessage, SearchCriteria},
 };
-use std::path::PathBuf;
+use std::hint::black_box;
 
 fn benchmark_message_post(c: &mut Criterion) {
     let rt = tokio::runtime::Runtime::new().unwrap();
@@ -25,8 +24,9 @@ fn benchmark_message_post(c: &mut Criterion) {
                 let temp_dir = tempfile::tempdir().unwrap();
                 let base_path = temp_dir.path().join("bench_base");
 
+                let writer = JamWriter::new(&base_path);
+                writer.initialize_base().await.unwrap();
                 let mut base = JamMessageBase::new(&base_path);
-                base.create().await.unwrap();
 
                 let msg = NewMessage::new(
                     black_box("Alice"),
@@ -44,18 +44,18 @@ fn benchmark_message_post(c: &mut Criterion) {
 fn benchmark_message_read(c: &mut Criterion) {
     let rt = tokio::runtime::Runtime::new().unwrap();
 
-    // Setup: create base with one message
     let (base_path, _temp_dir) = rt.block_on(async {
         let temp_dir = tempfile::tempdir().unwrap();
         let base_path = temp_dir.path().join("bench_base");
 
+        let writer = JamWriter::new(&base_path);
+        writer.initialize_base().await.unwrap();
         let mut base = JamMessageBase::new(&base_path);
-        base.create().await.unwrap();
 
         let msg = NewMessage::new("Alice", "Bob", "Test").with_body("Body");
         base.post_message(msg).await.unwrap();
 
-        (base_path.clone(), temp_dir)
+        (base_path, temp_dir)
     });
 
     c.bench_function("message_read", |b| {
@@ -71,27 +71,28 @@ fn benchmark_message_read(c: &mut Criterion) {
 fn benchmark_message_list(c: &mut Criterion) {
     let rt = tokio::runtime::Runtime::new().unwrap();
 
-    // Setup: create base with 100 messages
     let (base_path, _temp_dir) = rt.block_on(async {
         let temp_dir = tempfile::tempdir().unwrap();
         let base_path = temp_dir.path().join("bench_base");
 
+        let writer = JamWriter::new(&base_path);
+        writer.initialize_base().await.unwrap();
         let mut base = JamMessageBase::new(&base_path);
-        base.create().await.unwrap();
 
         for i in 0..100 {
-            let msg = NewMessage::new("Alice", "Bob", format!("Message {}", i));
+            let msg =
+                NewMessage::new("Alice", "Bob", format!("Message {}", i)).with_body("Message body");
             base.post_message(msg).await.unwrap();
         }
 
-        (base_path.clone(), temp_dir)
+        (base_path, temp_dir)
     });
 
     c.bench_function("message_list_100", |b| {
         b.iter(|| {
             rt.block_on(async {
                 let base = JamMessageBase::new(&base_path);
-                base.list_messages(black_box(0), black_box(100)).await
+                base.list_messages(black_box(1), black_box(100)).await
             })
         })
     });
@@ -100,21 +101,22 @@ fn benchmark_message_list(c: &mut Criterion) {
 fn benchmark_message_search(c: &mut Criterion) {
     let rt = tokio::runtime::Runtime::new().unwrap();
 
-    // Setup: create base with 100 messages
     let (base_path, _temp_dir) = rt.block_on(async {
         let temp_dir = tempfile::tempdir().unwrap();
         let base_path = temp_dir.path().join("bench_base");
 
+        let writer = JamWriter::new(&base_path);
+        writer.initialize_base().await.unwrap();
         let mut base = JamMessageBase::new(&base_path);
-        base.create().await.unwrap();
 
         for i in 0..100 {
             let from = if i % 2 == 0 { "Alice" } else { "Bob" };
-            let msg = NewMessage::new(from, "All", format!("Message {}", i));
+            let msg =
+                NewMessage::new(from, "All", format!("Message {}", i)).with_body("Message body");
             base.post_message(msg).await.unwrap();
         }
 
-        (base_path.clone(), temp_dir)
+        (base_path, temp_dir)
     });
 
     c.bench_function("message_search", |b| {
@@ -131,16 +133,15 @@ fn benchmark_message_search(c: &mut Criterion) {
 fn benchmark_thread_building(c: &mut Criterion) {
     let rt = tokio::runtime::Runtime::new().unwrap();
 
-    // Setup: create base with threaded messages
     let (base_path, _temp_dir) = rt.block_on(async {
         let temp_dir = tempfile::tempdir().unwrap();
         let base_path = temp_dir.path().join("bench_base");
 
+        let writer = JamWriter::new(&base_path);
+        writer.initialize_base().await.unwrap();
         let mut base = JamMessageBase::new(&base_path);
-        base.create().await.unwrap();
 
-        // Create a thread with 10 messages
-        let msg1 = NewMessage::new("Alice", "All", "Thread Topic");
+        let msg1 = NewMessage::new("Alice", "All", "Thread Topic").with_body("Root post");
         base.post_message(msg1).await.unwrap();
 
         for i in 0..9 {
@@ -151,7 +152,7 @@ fn benchmark_thread_building(c: &mut Criterion) {
             base.post_message(reply).await.unwrap();
         }
 
-        (base_path.clone(), temp_dir)
+        (base_path, temp_dir)
     });
 
     c.bench_function("thread_build", |b| {
@@ -167,20 +168,21 @@ fn benchmark_thread_building(c: &mut Criterion) {
 fn benchmark_message_count(c: &mut Criterion) {
     let rt = tokio::runtime::Runtime::new().unwrap();
 
-    // Setup: create base with 100 messages
     let (base_path, _temp_dir) = rt.block_on(async {
         let temp_dir = tempfile::tempdir().unwrap();
         let base_path = temp_dir.path().join("bench_base");
 
+        let writer = JamWriter::new(&base_path);
+        writer.initialize_base().await.unwrap();
         let mut base = JamMessageBase::new(&base_path);
-        base.create().await.unwrap();
 
         for i in 0..100 {
-            let msg = NewMessage::new("Alice", "Bob", format!("Message {}", i));
+            let msg =
+                NewMessage::new("Alice", "Bob", format!("Message {}", i)).with_body("Message body");
             base.post_message(msg).await.unwrap();
         }
 
-        (base_path.clone(), temp_dir)
+        (base_path, temp_dir)
     });
 
     c.bench_function("message_count", |b| {

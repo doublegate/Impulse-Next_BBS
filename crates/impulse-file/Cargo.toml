@@ -17,8 +17,8 @@ serde = { workspace = true }
 chrono = { workspace = true }
 
 # File handling
-zip = "8.6"
-wildmatch = "2.6"
+zip = "9.1"
+wildmatch = "2.7"
 
 # Upload functionality
 sha2 = "0.11"

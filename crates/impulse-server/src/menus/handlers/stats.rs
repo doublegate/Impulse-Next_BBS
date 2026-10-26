@@ -36,7 +36,7 @@ pub async fn handle_system_stats(
     renderer.write_line("  BBS Software:        Impulse 7.1 (Rust Edition)");
     renderer.write_line("  Version:             0.8.0");
     renderer.write_line("  Platform:            Rust 2024 Edition");
-    renderer.write_line("  MSRV:                1.88+");
+    renderer.write_line("  MSRV:                1.99.1+");
     renderer.write_line("");
 
     renderer.set_foreground(Color::BrightGreen);

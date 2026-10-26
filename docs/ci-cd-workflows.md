@@ -104,9 +104,9 @@ lint ──┬─→ test ──┬─→ build
 #### 7. **msrv** (Minimum Rust Version)
 - **Platform:** ubuntu-latest
 - **Duration:** ~2-3 minutes
-- **Purpose:** Verify compatibility with MSRV (1.88)
+- **Purpose:** Verify compatibility with MSRV (1.99.1)
 - **Steps:**
-  - Install Rust 1.88 toolchain
+  - Install Rust 1.99.1 toolchain
   - Check workspace builds with MSRV
 - **Caching:** Shared cache key "msrv"
 - **Dependencies:** Requires `lint` to pass (parallel with test)

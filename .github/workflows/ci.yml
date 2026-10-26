@@ -126,12 +126,12 @@ jobs:
           path: ~/.cargo/bin/cargo-tarpaulin
           # Exact-version key only: a prefix restore-key would restore an older
           # binary, and the install step below would then skip the pinned version.
-          key: ${{ runner.os }}-cargo-tarpaulin-0.37.4
+          key: ${{ runner.os }}-cargo-tarpaulin-0.37.5
 
       - name: Install cargo-tarpaulin
         run: |
           if ! command -v cargo-tarpaulin &> /dev/null; then
-            cargo install cargo-tarpaulin --version 0.37.4
+            cargo install --locked cargo-tarpaulin --version 0.37.5
           fi
 
       - name: Generate coverage
@@ -212,7 +212,7 @@ jobs:
       - name: Install cargo-audit
         run: |
           if ! command -v cargo-audit &> /dev/null; then
-            cargo install cargo-audit --version 0.22.2
+            cargo install --locked cargo-audit --version 0.22.2
           fi
 
       - name: Run security audit
@@ -230,7 +230,7 @@ jobs:
       - name: Install Rust MSRV toolchain
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: "1.88"
+          toolchain: "1.99.1"
 
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2

@@ -112,7 +112,7 @@ impl JamMessageBase {
         let mut file = File::open(self.jhr_path()).await?;
         file.seek(std::io::SeekFrom::Start(position)).await?;
 
-        let mut buffer = vec![0u8; std::mem::size_of::<JamMessageHeader>()];
+        let mut buffer = vec![0u8; 68];
         file.read_exact(&mut buffer).await?;
 
         let mut cursor = std::io::Cursor::new(buffer);
@@ -212,7 +212,7 @@ impl MessageBase for JamMessageBase {
         }
 
         // Calculate position in .jhr file
-        let header_size = std::mem::size_of::<JamBaseHeader>() as u64;
+        let header_size = 24u64;
         // Note: This is simplified; actual JAM needs to account for subfields
         let position = header_size;
 
@@ -325,7 +325,7 @@ impl MessageBase for JamMessageBase {
 
     async fn get_thread(&self, msg_num: u32) -> Result<MessageThread> {
         let _msg = self.read_message(msg_num).await?;
-        let position = std::mem::size_of::<JamBaseHeader>() as u64;
+        let position = 24u64;
         let (header, _) = self.load_message_header(position).await?;
         self.build_thread(msg_num, &header).await
     }

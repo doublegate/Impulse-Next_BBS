@@ -11,7 +11,7 @@
 <!-- Row 2: Project Identity -->
 [![Release](https://img.shields.io/github/v/release/doublegate/Impulse-Next_BBS?color=blue)](https://github.com/doublegate/Impulse-Next_BBS/releases)
 [![License](https://img.shields.io/badge/license-MIT_OR_Apache--2.0-blue)](https://github.com/doublegate/Impulse-Next_BBS#license)
-[![Rust](https://img.shields.io/badge/rust-1.88+-orange?logo=rust)](https://www.rust-lang.org)
+[![Rust](https://img.shields.io/badge/rust-1.99.1+-orange?logo=rust)](https://www.rust-lang.org)
 [![Edition](https://img.shields.io/badge/edition-2024-orange)](https://doc.rust-lang.org/edition-guide/)
 
 <!-- Row 3: Project Metrics -->
@@ -548,7 +548,7 @@ See [docs/architecture/system-architecture.md](docs/architecture/system-architec
 
 ### Prerequisites
 
-- **Rust**: 1.88 or later ([Install Rust](https://www.rust-lang.org/tools/install))
+- **Rust**: 1.99.1 or later ([Install Rust](https://www.rust-lang.org/tools/install))
 - **Git**: 2.30 or later
 - **Platform**: Linux, Windows 11, or macOS
 
@@ -717,14 +717,14 @@ Impulse-Next_BBS/
 ### Core Technologies
 
 - **Language**: Rust 2024 edition
-- **Minimum Version**: Rust 1.88+ (required by home@0.5.12)
-- **Async Runtime**: Tokio 1.53
+- **Minimum Version**: Rust 1.99.1+
+- **Async Runtime**: Tokio 1.54
 
 ### Key Dependencies
 
 **Production:**
 
-- `tokio` 1.53 - Async runtime (full features)
+- `tokio` 1.54 - Async runtime (full features)
 - `tokio-util` 0.7 - Async utilities
 - `crossterm` 0.29 - Terminal I/O
 - `serde` 1.0 - Serialization framework

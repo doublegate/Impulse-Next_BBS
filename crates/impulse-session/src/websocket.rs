@@ -4,7 +4,10 @@ use crate::connection::{Connection, ConnectionError, ConnectionType};
 use async_trait::async_trait;
 use futures_util::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool, Ordering},
+};
 use tokio::net::TcpStream;
 use tokio::sync::Mutex;
 use tokio_tungstenite::{WebSocketStream, accept_async, tungstenite::Message};
@@ -17,7 +20,7 @@ pub struct WebSocketConnection {
     /// Remote address
     remote_addr: String,
     /// Whether the connection is still active
-    connected: Arc<Mutex<bool>>,
+    connected: Arc<AtomicBool>,
 }
 
 impl WebSocketConnection {
@@ -30,7 +33,7 @@ impl WebSocketConnection {
         Ok(Self {
             stream: Arc::new(Mutex::new(ws_stream)),
             remote_addr,
-            connected: Arc::new(Mutex::new(true)),
+            connected: Arc::new(AtomicBool::new(true)),
         })
     }
 
@@ -75,7 +78,7 @@ impl Connection for WebSocketConnection {
     async fn send_text(&mut self, data: &str) -> Result<(), ConnectionError> {
         let mut stream = self.stream.lock().await;
         stream.send(Message::Text(data.into())).await.map_err(|e| {
-            *self.connected.blocking_lock() = false;
+            self.connected.store(false, Ordering::SeqCst);
             ConnectionError::WebSocket(format!("Failed to send text: {}", e))
         })?;
 
@@ -89,7 +92,7 @@ impl Connection for WebSocketConnection {
             .send(Message::Binary(data.to_vec().into()))
             .await
             .map_err(|e| {
-                *self.connected.blocking_lock() = false;
+                self.connected.store(false, Ordering::SeqCst);
                 ConnectionError::WebSocket(format!("Failed to send bytes: {}", e))
             })?;
 
@@ -126,7 +129,7 @@ impl Connection for WebSocketConnection {
                 }
                 Message::Close(_) => {
                     debug!(remote = %self.remote_addr, "Received close frame");
-                    *self.connected.lock().await = false;
+                    self.connected.store(false, Ordering::SeqCst);
                     Ok(None)
                 }
                 Message::Frame(_) => {
@@ -137,12 +140,12 @@ impl Connection for WebSocketConnection {
             },
             Some(Err(e)) => {
                 warn!(remote = %self.remote_addr, error = %e, "WebSocket error");
-                *self.connected.lock().await = false;
+                self.connected.store(false, Ordering::SeqCst);
                 Err(ConnectionError::WebSocket(format!("Receive error: {}", e)))
             }
             None => {
                 debug!(remote = %self.remote_addr, "WebSocket stream ended");
-                *self.connected.lock().await = false;
+                self.connected.store(false, Ordering::SeqCst);
                 Ok(None)
             }
         }
@@ -155,13 +158,13 @@ impl Connection for WebSocketConnection {
             .await
             .map_err(|e| ConnectionError::WebSocket(format!("Failed to close: {}", e)))?;
 
-        *self.connected.lock().await = false;
+        self.connected.store(false, Ordering::SeqCst);
         debug!(remote = %self.remote_addr, "WebSocket connection closed");
         Ok(())
     }
 
     fn is_connected(&self) -> bool {
-        *self.connected.blocking_lock()
+        self.connected.load(Ordering::SeqCst)
     }
 }
 
@@ -274,5 +277,36 @@ mod tests {
             }
             _ => panic!("Wrong event type"),
         }
+    }
+
+    #[tokio::test]
+    async fn test_websocket_send_failure_and_is_connected_on_runtime() {
+        use tokio::net::TcpListener;
+        use tokio_tungstenite::connect_async;
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+
+        let client_handle = tokio::spawn(async move {
+            let (mut ws_client, _) = connect_async(format!("ws://{}", addr)).await.unwrap();
+            ws_client.close(None).await.unwrap();
+            drop(ws_client);
+        });
+
+        let (tcp_stream, remote) = listener.accept().await.unwrap();
+        let mut conn = WebSocketConnection::new(tcp_stream, remote.to_string())
+            .await
+            .unwrap();
+        assert!(conn.is_connected());
+
+        client_handle.await.unwrap();
+
+        // Drain the close frame on the runtime thread and verify is_connected() does not panic.
+        let _ = conn.recv().await;
+        assert!(!conn.is_connected());
+
+        // Sending on a closed stream inside an async runtime must return Err, not panic.
+        let _ = conn.send_text("after close").await;
+        assert!(!conn.is_connected());
     }
 }

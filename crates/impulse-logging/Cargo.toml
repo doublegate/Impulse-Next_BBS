@@ -34,7 +34,7 @@ anyhow = { workspace = true }
 tokio = { workspace = true, features = ["rt", "macros", "test-util"] }
 tempfile = "3.27"
 proptest = { workspace = true }
-serial_test = "3.5"
+serial_test = "4.0"
 
 [[bench]]
 name = "logging_benchmarks"

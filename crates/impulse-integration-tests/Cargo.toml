@@ -30,7 +30,7 @@ tokio = { workspace = true, features = ["full", "test-util"] }
 # Testing infrastructure
 tempfile = "3.27"
 proptest = { workspace = true }
-fake = { version = "5.1", features = ["derive"] }
+
 criterion = { workspace = true }
 
 # Standard dependencies
@@ -49,4 +49,24 @@ tokio-test = "0.4"
 
 [[bench]]
 name = "load_benchmarks"
+harness = false
+
+[[bench]]
+name = "authentication"
+path = "../../benches/authentication.rs"
+harness = false
+
+[[bench]]
+name = "files"
+path = "../../benches/files.rs"
+harness = false
+
+[[bench]]
+name = "messaging"
+path = "../../benches/messaging.rs"
+harness = false
+
+[[bench]]
+name = "stats"
+path = "../../benches/stats.rs"
 harness = false
