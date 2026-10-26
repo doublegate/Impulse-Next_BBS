@@ -198,24 +198,48 @@ impl JamMessageBase {
 
         Ok(thread)
     }
+
+    /// Resolve the byte position of `msg_num`'s header in the `.jhr` file
+    async fn resolve_header_position(&self, msg_num: u32) -> Result<u64> {
+        let base_header = self.load_base_header().await?;
+
+        if msg_num < base_header.base_msg_num
+            || msg_num >= base_header.base_msg_num + base_header.active
+        {
+            return Err(MessageError::MessageNotFound(msg_num));
+        }
+
+        let buffer = tokio::fs::read(self.jhr_path()).await?;
+        let mut position = 24usize;
+        let steps = (msg_num - base_header.base_msg_num) as usize;
+
+        for _ in 0..steps {
+            if position + 68 > buffer.len() {
+                return Err(MessageError::MessageNotFound(msg_num));
+            }
+            let subfield_len =
+                u32::from_le_bytes(buffer[position + 8..position + 12].try_into().map_err(
+                    |_| MessageError::CorruptMessage("Truncated JAM message header".to_string()),
+                )?) as usize;
+            position = position
+                .checked_add(68)
+                .and_then(|p| p.checked_add(subfield_len))
+                .ok_or_else(|| {
+                    MessageError::CorruptMessage("JAM header offset overflow".to_string())
+                })?;
+            if position > buffer.len() {
+                return Err(MessageError::MessageNotFound(msg_num));
+            }
+        }
+
+        Ok(position as u64)
+    }
 }
 
 #[async_trait]
 impl MessageBase for JamMessageBase {
     async fn read_message(&self, msg_num: u32) -> Result<FullMessage> {
-        // For JAM, msg_num is 1-based, and messages are stored sequentially
-        // Base header is at position 0, each message header follows
-        let base_header = self.load_base_header().await?;
-
-        if msg_num < base_header.base_msg_num {
-            return Err(MessageError::MessageNotFound(msg_num));
-        }
-
-        // Calculate position in .jhr file
-        let header_size = 24u64;
-        // Note: This is simplified; actual JAM needs to account for subfields
-        let position = header_size;
-
+        let position = self.resolve_header_position(msg_num).await?;
         let (header, subfields) = self.load_message_header(position).await?;
 
         // Extract fields from subfields
@@ -324,8 +348,7 @@ impl MessageBase for JamMessageBase {
     }
 
     async fn get_thread(&self, msg_num: u32) -> Result<MessageThread> {
-        let _msg = self.read_message(msg_num).await?;
-        let position = 24u64;
+        let position = self.resolve_header_position(msg_num).await?;
         let (header, _) = self.load_message_header(position).await?;
         self.build_thread(msg_num, &header).await
     }

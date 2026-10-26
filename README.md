@@ -740,14 +740,14 @@ Impulse-Next_BBS/
 - `rand` 0.10 - Secure randomness
 - `colored` 3.1 - Terminal colors
 - `notify` 8.2 - File system watching (Dependabot update)
-- `sqlx` 0.8 - Database access (0.9 needs Rust 1.94, above the MSRV)
+- `sqlx` 0.9 - Database access
 - `axum` 0.8 - Web framework
 - `bitflags` 2.13 - Pascal set types
 
 **Development:**
 
-- `proptest` 1.11 - Property-based testing
-- `serial_test` 3.5 - Test isolation (4.x needs Rust 1.93.1)
+- `proptest` 1.12 - Property-based testing
+- `serial_test` 4.0 - Test isolation
 - `tempfile` 3.27 - Temporary file handling
 
 **Build Optimization:**

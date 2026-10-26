@@ -284,29 +284,58 @@ mod tests {
         use tokio::net::TcpListener;
         use tokio_tungstenite::connect_async;
 
-        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let addr = listener.local_addr().unwrap();
+        async fn closed_peer_connection() -> WebSocketConnection {
+            let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+            let addr = listener.local_addr().unwrap();
 
-        let client_handle = tokio::spawn(async move {
-            let (mut ws_client, _) = connect_async(format!("ws://{}", addr)).await.unwrap();
-            ws_client.close(None).await.unwrap();
-            drop(ws_client);
-        });
+            let client_handle = tokio::spawn(async move {
+                let (mut ws_client, _) = connect_async(format!("ws://{}", addr)).await.unwrap();
+                ws_client.close(None).await.unwrap();
+                drop(ws_client);
+            });
 
-        let (tcp_stream, remote) = listener.accept().await.unwrap();
-        let mut conn = WebSocketConnection::new(tcp_stream, remote.to_string())
-            .await
-            .unwrap();
-        assert!(conn.is_connected());
+            let (tcp_stream, remote) = listener.accept().await.unwrap();
+            let conn = WebSocketConnection::new(tcp_stream, remote.to_string())
+                .await
+                .unwrap();
+            client_handle.await.unwrap();
+            conn
+        }
 
-        client_handle.await.unwrap();
+        // 1. Drain the close frame via recv() and verify is_connected() transitions to false.
+        let mut recv_conn = closed_peer_connection().await;
+        assert!(recv_conn.is_connected());
+        let _ = recv_conn.recv().await;
+        assert!(!recv_conn.is_connected());
 
-        // Drain the close frame on the runtime thread and verify is_connected() does not panic.
-        let _ = conn.recv().await;
-        assert!(!conn.is_connected());
+        // 2. On a separate connection where connected is still true, verify send_text failure
+        //    returns Err and clears connected without panicking on the runtime.
+        let mut text_conn = closed_peer_connection().await;
+        assert!(text_conn.is_connected());
+        let mut send_text_failed = false;
+        for _ in 0..8 {
+            if text_conn.send_text("after close").await.is_err() {
+                send_text_failed = true;
+                break;
+            }
+            tokio::task::yield_now().await;
+        }
+        assert!(send_text_failed);
+        assert!(!text_conn.is_connected());
 
-        // Sending on a closed stream inside an async runtime must return Err, not panic.
-        let _ = conn.send_text("after close").await;
-        assert!(!conn.is_connected());
+        // 3. On another separate connection where connected is still true, verify send_bytes
+        //    failure returns Err and clears connected without panicking on the runtime.
+        let mut bytes_conn = closed_peer_connection().await;
+        assert!(bytes_conn.is_connected());
+        let mut send_bytes_failed = false;
+        for _ in 0..8 {
+            if bytes_conn.send_bytes(b"after close").await.is_err() {
+                send_bytes_failed = true;
+                break;
+            }
+            tokio::task::yield_now().await;
+        }
+        assert!(send_bytes_failed);
+        assert!(!bytes_conn.is_connected());
     }
 }

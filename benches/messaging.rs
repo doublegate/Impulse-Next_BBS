@@ -7,7 +7,7 @@
 //! - Search operations
 //! - Thread building
 
-use criterion::{Criterion, criterion_group, criterion_main};
+use criterion::{BatchSize, Criterion, criterion_group, criterion_main};
 use impulse_message::{
     formats::{JamMessageBase, jam::JamWriter},
     traits::MessageBase,
@@ -19,25 +19,32 @@ fn benchmark_message_post(c: &mut Criterion) {
     let rt = tokio::runtime::Runtime::new().unwrap();
 
     c.bench_function("message_post", |b| {
-        b.iter(|| {
-            rt.block_on(async {
-                let temp_dir = tempfile::tempdir().unwrap();
-                let base_path = temp_dir.path().join("bench_base");
+        b.iter_batched_ref(
+            || {
+                rt.block_on(async {
+                    let temp_dir = tempfile::tempdir().unwrap();
+                    let base_path = temp_dir.path().join("bench_base");
 
-                let writer = JamWriter::new(&base_path);
-                writer.initialize_base().await.unwrap();
-                let mut base = JamMessageBase::new(&base_path);
+                    let writer = JamWriter::new(&base_path);
+                    writer.initialize_base().await.unwrap();
 
-                let msg = NewMessage::new(
-                    black_box("Alice"),
-                    black_box("Bob"),
-                    black_box("Test Subject"),
-                )
-                .with_body(black_box("This is a test message body."));
+                    (temp_dir, JamMessageBase::new(&base_path))
+                })
+            },
+            |(_, base)| {
+                rt.block_on(async {
+                    let msg = NewMessage::new(
+                        black_box("Alice"),
+                        black_box("Bob"),
+                        black_box("Test Subject"),
+                    )
+                    .with_body(black_box("This is a test message body."));
 
-                base.post_message(msg).await
-            })
-        })
+                    base.post_message(msg).await
+                })
+            },
+            BatchSize::PerIteration,
+        )
     });
 }
 
@@ -116,6 +123,12 @@ fn benchmark_message_search(c: &mut Criterion) {
             base.post_message(msg).await.unwrap();
         }
 
+        let initial_matches = base
+            .search(&SearchCriteria::new().with_from("Alice"))
+            .await
+            .unwrap();
+        assert_eq!(initial_matches.len(), 50);
+
         (base_path, temp_dir)
     });
 
@@ -124,7 +137,9 @@ fn benchmark_message_search(c: &mut Criterion) {
             rt.block_on(async {
                 let base = JamMessageBase::new(&base_path);
                 let criteria = SearchCriteria::new().with_from(black_box("Alice"));
-                base.search(&criteria).await
+                let matches = base.search(&criteria).await.unwrap();
+                assert_eq!(matches.len(), 50);
+                matches
             })
         })
     });
