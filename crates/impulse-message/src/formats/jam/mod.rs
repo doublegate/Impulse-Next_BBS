@@ -112,7 +112,7 @@ impl JamMessageBase {
         let mut file = File::open(self.jhr_path()).await?;
         file.seek(std::io::SeekFrom::Start(position)).await?;
 
-        let mut buffer = vec![0u8; std::mem::size_of::<JamMessageHeader>()];
+        let mut buffer = vec![0u8; 68];
         file.read_exact(&mut buffer).await?;
 
         let mut cursor = std::io::Cursor::new(buffer);
@@ -198,24 +198,48 @@ impl JamMessageBase {
 
         Ok(thread)
     }
+
+    /// Resolve the byte position of `msg_num`'s header in the `.jhr` file
+    async fn resolve_header_position(&self, msg_num: u32) -> Result<u64> {
+        let base_header = self.load_base_header().await?;
+
+        if msg_num < base_header.base_msg_num
+            || msg_num >= base_header.base_msg_num + base_header.active
+        {
+            return Err(MessageError::MessageNotFound(msg_num));
+        }
+
+        let buffer = tokio::fs::read(self.jhr_path()).await?;
+        let mut position = 24usize;
+        let steps = (msg_num - base_header.base_msg_num) as usize;
+
+        for _ in 0..steps {
+            if position + 68 > buffer.len() {
+                return Err(MessageError::MessageNotFound(msg_num));
+            }
+            let subfield_len =
+                u32::from_le_bytes(buffer[position + 8..position + 12].try_into().map_err(
+                    |_| MessageError::CorruptMessage("Truncated JAM message header".to_string()),
+                )?) as usize;
+            position = position
+                .checked_add(68)
+                .and_then(|p| p.checked_add(subfield_len))
+                .ok_or_else(|| {
+                    MessageError::CorruptMessage("JAM header offset overflow".to_string())
+                })?;
+            if position > buffer.len() {
+                return Err(MessageError::MessageNotFound(msg_num));
+            }
+        }
+
+        Ok(position as u64)
+    }
 }
 
 #[async_trait]
 impl MessageBase for JamMessageBase {
     async fn read_message(&self, msg_num: u32) -> Result<FullMessage> {
-        // For JAM, msg_num is 1-based, and messages are stored sequentially
-        // Base header is at position 0, each message header follows
-        let base_header = self.load_base_header().await?;
-
-        if msg_num < base_header.base_msg_num {
-            return Err(MessageError::MessageNotFound(msg_num));
-        }
-
-        // Calculate position in .jhr file
-        let header_size = std::mem::size_of::<JamBaseHeader>() as u64;
-        // Note: This is simplified; actual JAM needs to account for subfields
-        let position = header_size;
-
+        let position = self.resolve_header_position(msg_num).await?;
         let (header, subfields) = self.load_message_header(position).await?;
 
         // Extract fields from subfields
@@ -324,8 +348,7 @@ impl MessageBase for JamMessageBase {
     }
 
     async fn get_thread(&self, msg_num: u32) -> Result<MessageThread> {
-        let _msg = self.read_message(msg_num).await?;
-        let position = std::mem::size_of::<JamBaseHeader>() as u64;
+        let position = self.resolve_header_position(msg_num).await?;
         let (header, _) = self.load_message_header(position).await?;
         self.build_thread(msg_num, &header).await
     }
@@ -447,5 +470,64 @@ mod tests {
         assert_eq!(base.jhr_path(), PathBuf::from("/msg/general.jhr"));
         assert_eq!(base.jdt_path(), PathBuf::from("/msg/general.jdt"));
         assert_eq!(base.jdx_path(), PathBuf::from("/msg/general.jdx"));
+    }
+
+    #[tokio::test]
+    async fn test_jam_multi_message_read_search_and_thread() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let base_path = temp_dir.path().join("general");
+
+        let writer = JamWriter::new(&base_path);
+        writer.initialize_base().await.unwrap();
+
+        let mut base = JamMessageBase::new(&base_path);
+
+        let msg1 = NewMessage::new("Alice", "Bob", "First Topic").with_body("Hello from Alice");
+        let num1 = base.post_message(msg1).await.unwrap();
+        assert_eq!(num1, 1);
+
+        let msg2 = NewMessage::new("Bob", "Alice", "Second Topic").with_body("Hello from Bob");
+        let num2 = base.post_message(msg2).await.unwrap();
+        assert_eq!(num2, 2);
+
+        let reply = NewMessage::new("Carol", "Alice", "First Topic").with_body("Reply from Carol");
+        let num3 = base.reply_to_message(1, reply).await.unwrap();
+        assert_eq!(num3, 3);
+
+        // Read each message by number and verify distinct headers and bodies
+        let read1 = base.read_message(1).await.unwrap();
+        assert_eq!(read1.header.from, "Alice");
+        assert_eq!(read1.body, "Hello from Alice");
+
+        let read2 = base.read_message(2).await.unwrap();
+        assert_eq!(read2.header.from, "Bob");
+        assert_eq!(read2.body, "Hello from Bob");
+
+        let read3 = base.read_message(3).await.unwrap();
+        assert_eq!(read3.header.from, "Carol");
+        assert_eq!(read3.header.reply_to, Some(1));
+
+        // Out-of-bounds message numbers return MessageNotFound
+        assert!(matches!(
+            base.read_message(0).await,
+            Err(MessageError::MessageNotFound(0))
+        ));
+        assert!(matches!(
+            base.read_message(99).await,
+            Err(MessageError::MessageNotFound(99))
+        ));
+
+        // Search by sender
+        let bob_matches = base
+            .search(&SearchCriteria::new().with_from("Bob"))
+            .await
+            .unwrap();
+        assert_eq!(bob_matches, vec![2]);
+
+        // Thread lookup for a reply message (msg_num > 1)
+        let thread3 = base.get_thread(3).await.unwrap();
+        assert_eq!(thread3.root_msg, 3);
+        assert_eq!(thread3.parent_id, Some(1));
+        assert_eq!(thread3.depth, 1);
     }
 }

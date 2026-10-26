@@ -6,12 +6,11 @@
 //! - Session token generation
 //! - Session validation
 
-use criterion::{criterion_group, criterion_main, Criterion};
-use std::hint::black_box;
+use criterion::{Criterion, criterion_group, criterion_main};
 use impulse_auth::{
-    flows::AuthService, lockout::AccountLockout, rate_limit::RateLimiter, PasswordHasher,
-    SessionToken,
+    AuthService, PasswordHasher, SessionToken, lockout::AccountLockout, rate_limit::RateLimiter,
 };
+use std::hint::black_box;
 use std::time::Duration;
 
 fn benchmark_password_hashing(c: &mut Criterion) {
@@ -36,9 +35,7 @@ fn benchmark_password_verification(c: &mut Criterion) {
 }
 
 fn benchmark_session_token_generation(c: &mut Criterion) {
-    c.bench_function("session_token_new", |b| {
-        b.iter(|| SessionToken::new())
-    });
+    c.bench_function("session_token_new", |b| b.iter(SessionToken::new));
 }
 
 fn benchmark_login_flow(c: &mut Criterion) {
@@ -47,7 +44,7 @@ fn benchmark_login_flow(c: &mut Criterion) {
     c.bench_function("login_flow", |b| {
         b.iter(|| {
             rt.block_on(async {
-                let mut auth = AuthService::new_with_protection(
+                let auth = AuthService::new_with_protection(
                     Duration::from_secs(1800),
                     RateLimiter::new_default(),
                     AccountLockout::new_default(),
@@ -57,12 +54,8 @@ fn benchmark_login_flow(c: &mut Criterion) {
                 let password = "SecureP@ss123";
                 let hash = hasher.hash_password(password).unwrap();
 
-                auth.authenticate(
-                    black_box("testuser"),
-                    black_box(password),
-                    black_box(&hash),
-                )
-                .await
+                auth.authenticate(black_box("testuser"), black_box(password), black_box(&hash))
+                    .await
             })
         })
     });
@@ -71,9 +64,8 @@ fn benchmark_login_flow(c: &mut Criterion) {
 fn benchmark_session_validation(c: &mut Criterion) {
     let rt = tokio::runtime::Runtime::new().unwrap();
 
-    // Setup: create a session
     let (auth, token) = rt.block_on(async {
-        let mut auth = AuthService::new_with_protection(
+        let auth = AuthService::new_with_protection(
             Duration::from_secs(1800),
             RateLimiter::new_default(),
             AccountLockout::new_default(),
@@ -82,7 +74,10 @@ fn benchmark_session_validation(c: &mut Criterion) {
         let hasher = PasswordHasher::new();
         let password = "SecureP@ss123";
         let hash = hasher.hash_password(password).unwrap();
-        let token = auth.authenticate("testuser", password, &hash).await.unwrap();
+        let token = auth
+            .authenticate("testuser", password, &hash)
+            .await
+            .unwrap();
 
         (auth, token)
     });
@@ -98,7 +93,7 @@ fn benchmark_logout(c: &mut Criterion) {
     c.bench_function("logout", |b| {
         b.iter(|| {
             rt.block_on(async {
-                let mut auth = AuthService::new_with_protection(
+                let auth = AuthService::new_with_protection(
                     Duration::from_secs(1800),
                     RateLimiter::new_default(),
                     AccountLockout::new_default(),
@@ -107,7 +102,10 @@ fn benchmark_logout(c: &mut Criterion) {
                 let hasher = PasswordHasher::new();
                 let password = "SecureP@ss123";
                 let hash = hasher.hash_password(password).unwrap();
-                let token = auth.authenticate("testuser", password, &hash).await.unwrap();
+                let token = auth
+                    .authenticate("testuser", password, &hash)
+                    .await
+                    .unwrap();
 
                 auth.logout(black_box(&token)).await
             })

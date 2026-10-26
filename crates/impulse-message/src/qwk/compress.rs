@@ -61,7 +61,12 @@ impl QwkDecompressor {
     /// Get the list of file names in the packet
     pub fn file_names(&self) -> Vec<String> {
         (0..self.zip.len())
-            .filter_map(|i| self.zip.name_for_index(i).map(|s| s.to_string()))
+            .filter_map(|i| {
+                self.zip
+                    .name_for_index(i)
+                    .and_then(|res| res.ok())
+                    .map(|s| s.into_owned())
+            })
             .collect()
     }
 
@@ -88,7 +93,8 @@ impl QwkDecompressor {
 
         for i in 0..self.zip.len() {
             let mut file = self.zip.by_index(i)?;
-            let file_path = dest_dir.join(file.name());
+            let name = file.name()?;
+            let file_path = dest_dir.join(name.as_ref());
 
             if let Some(parent) = file_path.parent() {
                 std::fs::create_dir_all(parent)?;

@@ -158,14 +158,14 @@ Impulse-Next_BBS/
 ### Core Dependencies
 | Dependency | Version | Purpose |
 |------------|---------|---------|
-| Rust | 1.88+ (2024 edition) | Primary language (MSRV) |
+| Rust | 1.99.1+ (2024 edition) | Primary language (MSRV) |
 | Tokio | 1.47+ | Async runtime |
 | crossterm | 0.29 | Terminal I/O |
 | bincode | 2.0 | Binary serialization |
 | rand | 0.9 | Secure randomness |
 | colored | 3.0 | Terminal colors |
 | notify | 8.2 | File system watching |
-| SQLx | 0.8 | Database (SQLite/PostgreSQL) |
+| SQLx | 0.9 | Database (SQLite/PostgreSQL) |
 | Axum | 0.7 | Web framework |
 | serde | 1.0 | Serialization (JSON, bincode) |
 | thiserror | 2.0 | Error handling |
@@ -224,7 +224,7 @@ cargo build --workspace --all-features
 **CI Status:**
 - All 12 jobs passing (lint, test×3, build×3, coverage, benchmark, audit, MSRV, gate)
 - cargo-audit 0.22.0 (Cargo.lock v4 support)
-- MSRV testing (Rust 1.88)
+- MSRV testing (Rust 1.99.1)
 - Rust 2024 let-chains syntax across 19 files
 
 ### Dependabot

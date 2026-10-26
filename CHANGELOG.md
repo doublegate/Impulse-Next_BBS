@@ -8,17 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- Consolidated dependency update (supersedes Dependabot PRs #16-#21, #29, #32, #33, #36-#40, #44).
-  Major bumps: tokio-tungstenite 0.24 -> 0.30, toml 0.8/0.9 -> 1.1, which 7 -> 8, zip 2 -> 8,
-  fake 2 -> 5, criterion 0.5 -> 0.8, argon2 0.5 -> 0.6, sha2 0.10 -> 0.11, rand 0.9 -> 0.10,
-  tower-http 0.6 -> 0.7. Every other dependency moved to its latest MSRV-compatible release
-  (tokio 1.53, uuid 1.26, clap 4.6, proptest 1.11, ...).
-- Workspace resolver `2` -> `3`: dependency resolution now prefers versions compatible with
-  `rust-version` (without it `cargo update` selected `aes` 0.9.3, which requires Rust 1.89). It
-  falls back to an incompatible version only when no compatible one satisfies a requirement,
-  so the Rust 1.88 CI job remains the compatibility gate.
+- Raised MSRV (`rust-version`) from `1.88` to `1.99.1` across `Cargo.toml`, CI (`msrv` job), and documentation, unblocking previously held dependencies.
+- Consolidated dependency update (supersedes Dependabot PRs #48, #49, and earlier #16-#21, #29, #32, #33, #36-#40, #44).
+  Major bumps: `sqlx` 0.8 -> 0.9, `serial_test` 3.5 -> 4.0, `zip` 8.6 -> 9.1, `tokio-tungstenite` 0.24 -> 0.30,
+  `toml` 0.8/0.9 -> 1.1, `which` 7 -> 8, `criterion` 0.5 -> 0.8, `argon2` 0.5 -> 0.6, `sha2` 0.10 -> 0.11,
+  `rand` 0.9 -> 0.10, `tower-http` 0.6 -> 0.7. Minor/patch updates include `tokio` 1.54, `uuid` 1.29,
+  `proptest` 1.12, `wildmatch` 2.7, `aes` 0.9.3, and `sha2` 0.11.1.
+- Removed unused `fake` dependency from `impulse-integration-tests` and wired root `benches/*.rs`
+  (`authentication`, `files`, `messaging`, `stats`) into `impulse-integration-tests` using current workspace APIs.
+- Workspace resolver `2` -> `3`: dependency resolution prefers versions compatible with
+  `rust-version`, with the Rust 1.99.1 CI job enforcing MSRV compatibility.
 - GitHub Actions: checkout v7, cache v6, upload-artifact v7, download-artifact v8,
-  codecov-action v7, action-gh-release v3. CI tools: cargo-tarpaulin 0.37.4, cargo-audit 0.22.2.
+  codecov-action v7, action-gh-release v3. CI tools: `cargo-tarpaulin` 0.37.5 (`--locked`), `cargo-audit` 0.22.2 (`--locked`).
 - Legacy Pascal build image: `ubuntu:20.04` (end of standard support) -> `ubuntu:24.04`; the
   DOSBox build produces the same `IMP.EXE`/`IMP.OVR` on both.
 - Code updated for the new APIs: tungstenite `Utf8Bytes`/`Bytes` message payloads, argon2 0.6
@@ -26,6 +27,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `RngExt`, and `std::hint::black_box` in benchmarks.
 
 ### Fixed
+- Replaced `tokio::sync::Mutex<bool>` + `blocking_lock()` on `WebSocketConnection::connected` in
+  `impulse-session/src/websocket.rs` with `AtomicBool`, preventing runtime panics when a send fails
+  or `is_connected()` is called on a Tokio runtime thread.
+- Fixed `JamMessageBase::load_message_header`, `read_message`, and `get_thread` using `std::mem::size_of`
+  on `JamBaseHeader`/`JamMessageHeader` (which contain `Vec<u8>` fields) instead of their serialized
+  on-disk byte lengths (`24` and `68` bytes).
 - Clippy 1.98 `manual_checked_ops` errors in `impulse-file` and `impulse-user`, which had kept
   CI's Lint job (and every job behind it) red on `main`.
 - CI tool caches no longer fall back to an older cached `cargo-tarpaulin`/`cargo-audit` via a
@@ -44,10 +51,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the `mysql` feature is off), which is unchanged.
 
 ### Held back
-- `sqlx` 0.8 (0.9 requires Rust 1.94) and `serial_test` 3 (4 requires Rust 1.93.1): MSRV is 1.88.
 - `bincode` 2.0.1: 3.0.0 is a tombstone release whose only content is `compile_error!`.
   Upstream is unmaintained (RUSTSEC-2025-0141); it is a dev-dependency of `impulse-types` only.
-- `aes` 0.9.2 (transitive via zip): 0.9.3 requires Rust 1.89.
 
 ---
 

@@ -3,49 +3,51 @@
 //! This benchmark suite measures the performance of:
 //! - File listing operations
 //! - File search
-//! - FILE_ID.DIZ extraction
-//! - File area statistics
+//! - File counting and area retrieval
 
-use criterion::{criterion_group, criterion_main, Criterion};
-use std::hint::black_box;
+use chrono::Utc;
+use criterion::{Criterion, criterion_group, criterion_main};
 use impulse_file::{
     manager::InMemoryFileAreaManager,
     traits::FileAreaManager,
     types::{FileArea, SearchCriteria},
 };
-use impulse_types::{
-    file_entry::{FileEntry, FileName},
-    security::SecurityLevel,
-};
-use std::path::PathBuf;
+use impulse_types::{file::FileEntry, security::SecurityLevel};
+use std::hint::black_box;
+
+fn make_file(id: u32, area_id: u32, filename: &str, uploader: &str) -> FileEntry {
+    FileEntry {
+        id,
+        filename: filename.to_string(),
+        description: format!("Test file {}", id),
+        uploader: uploader.to_string(),
+        uploader_id: 1,
+        size_bytes: 1024 * (id as u64 + 1),
+        upload_date: Utc::now(),
+        area_id,
+        download_count: 0,
+        is_offline: false,
+        is_missing: false,
+        password: None,
+        cost_credits: None,
+    }
+}
 
 fn benchmark_list_areas(c: &mut Criterion) {
     let rt = tokio::runtime::Runtime::new().unwrap();
 
-    // Setup: create manager with 10 areas
     let manager = rt.block_on(async {
         let mut manager = InMemoryFileAreaManager::new();
         for i in 0..10 {
-            let area = FileArea {
-                id: i,
-                name: format!("Area {}", i),
-                description: format!("Test area {}", i),
-                path: PathBuf::from(format!("/files/area{}", i)),
-                security_level: SecurityLevel::NEW_USER,
-                upload_security: SecurityLevel::REGULAR_USER,
-            };
-            manager.create_area(area).await.unwrap();
+            let area = FileArea::new(i, format!("Area {}", i), format!("Test area {}", i));
+            manager.add_area(area).await.unwrap();
         }
         manager
     });
 
     c.bench_function("list_areas", |b| {
         b.iter(|| {
-            rt.block_on(async {
-                manager
-                    .list_areas(black_box(SecurityLevel::NEW_USER))
-                    .await
-            })
+            rt.block_on(async { manager.list_areas(black_box(SecurityLevel::NEW_USER)).await })
         })
     });
 }
@@ -53,29 +55,14 @@ fn benchmark_list_areas(c: &mut Criterion) {
 fn benchmark_get_files(c: &mut Criterion) {
     let rt = tokio::runtime::Runtime::new().unwrap();
 
-    // Setup: create manager with area containing 100 files
     let manager = rt.block_on(async {
         let mut manager = InMemoryFileAreaManager::new();
-        let area = FileArea {
-            id: 1,
-            name: "Test Area".to_string(),
-            description: "Test".to_string(),
-            path: PathBuf::from("/files/test"),
-            security_level: SecurityLevel::NEW_USER,
-            upload_security: SecurityLevel::REGULAR_USER,
-        };
-        manager.create_area(area).await.unwrap();
+        let area = FileArea::new(1, "Test Area".to_string(), "Test".to_string());
+        manager.add_area(area).await.unwrap();
 
         for i in 0..100 {
-            let file = FileEntry::new(
-                FileName::new(&format!("file{}.zip", i)).unwrap(),
-                PathBuf::from("/files/test"),
-            )
-            .with_description(&format!("Test file {}", i))
-            .with_uploader("Alice")
-            .with_size(1024 * (i + 1));
-
-            manager.add_file(1, file).await.unwrap();
+            let file = make_file(i, 1, &format!("file{}.zip", i), "Alice");
+            manager.add_file(file).await.unwrap();
         }
         manager
     });
@@ -88,51 +75,28 @@ fn benchmark_get_files(c: &mut Criterion) {
 fn benchmark_get_file(c: &mut Criterion) {
     let rt = tokio::runtime::Runtime::new().unwrap();
 
-    // Setup: create manager with one file
     let manager = rt.block_on(async {
         let mut manager = InMemoryFileAreaManager::new();
-        let area = FileArea {
-            id: 1,
-            name: "Test Area".to_string(),
-            description: "Test".to_string(),
-            path: PathBuf::from("/files/test"),
-            security_level: SecurityLevel::NEW_USER,
-            upload_security: SecurityLevel::REGULAR_USER,
-        };
-        manager.create_area(area).await.unwrap();
+        let area = FileArea::new(1, "Test Area".to_string(), "Test".to_string());
+        manager.add_area(area).await.unwrap();
 
-        let file = FileEntry::new(
-            FileName::new("test.zip").unwrap(),
-            PathBuf::from("/files/test"),
-        )
-        .with_description("Test file")
-        .with_uploader("Alice")
-        .with_size(1024);
-
-        manager.add_file(1, file).await.unwrap();
+        let file = make_file(1, 1, "test.zip", "Alice");
+        manager.add_file(file).await.unwrap();
         manager
     });
 
     c.bench_function("get_file", |b| {
-        b.iter(|| rt.block_on(async { manager.get_file(black_box(1), black_box("test.zip")).await }))
+        b.iter(|| rt.block_on(async { manager.get_file(black_box(1)).await }))
     });
 }
 
 fn benchmark_search_files(c: &mut Criterion) {
     let rt = tokio::runtime::Runtime::new().unwrap();
 
-    // Setup: create manager with 100 files
     let manager = rt.block_on(async {
         let mut manager = InMemoryFileAreaManager::new();
-        let area = FileArea {
-            id: 1,
-            name: "Test Area".to_string(),
-            description: "Test".to_string(),
-            path: PathBuf::from("/files/test"),
-            security_level: SecurityLevel::NEW_USER,
-            upload_security: SecurityLevel::REGULAR_USER,
-        };
-        manager.create_area(area).await.unwrap();
+        let area = FileArea::new(1, "Test Area".to_string(), "Test".to_string());
+        manager.add_area(area).await.unwrap();
 
         for i in 0..100 {
             let filename = if i % 2 == 0 {
@@ -140,13 +104,9 @@ fn benchmark_search_files(c: &mut Criterion) {
             } else {
                 format!("file{}.txt", i)
             };
-
-            let file = FileEntry::new(FileName::new(&filename).unwrap(), PathBuf::from("/files/test"))
-                .with_description(&format!("Test file {}", i))
-                .with_uploader(if i % 3 == 0 { "Alice" } else { "Bob" })
-                .with_size(1024 * (i + 1));
-
-            manager.add_file(1, file).await.unwrap();
+            let uploader = if i % 3 == 0 { "Alice" } else { "Bob" };
+            let file = make_file(i, 1, &filename, uploader);
+            manager.add_file(file).await.unwrap();
         }
         manager
     });
@@ -161,36 +121,23 @@ fn benchmark_search_files(c: &mut Criterion) {
     });
 }
 
-fn benchmark_area_stats(c: &mut Criterion) {
+fn benchmark_count_files(c: &mut Criterion) {
     let rt = tokio::runtime::Runtime::new().unwrap();
 
-    // Setup: create manager with 100 files
     let manager = rt.block_on(async {
         let mut manager = InMemoryFileAreaManager::new();
-        let area = FileArea {
-            id: 1,
-            name: "Test Area".to_string(),
-            description: "Test".to_string(),
-            path: PathBuf::from("/files/test"),
-            security_level: SecurityLevel::NEW_USER,
-            upload_security: SecurityLevel::REGULAR_USER,
-        };
-        manager.create_area(area).await.unwrap();
+        let area = FileArea::new(1, "Test Area".to_string(), "Test".to_string());
+        manager.add_area(area).await.unwrap();
 
         for i in 0..100 {
-            let file = FileEntry::new(
-                FileName::new(&format!("file{}.zip", i)).unwrap(),
-                PathBuf::from("/files/test"),
-            )
-            .with_size(1024 * (i + 1));
-
-            manager.add_file(1, file).await.unwrap();
+            let file = make_file(i, 1, &format!("file{}.zip", i), "Alice");
+            manager.add_file(file).await.unwrap();
         }
         manager
     });
 
-    c.bench_function("area_stats", |b| {
-        b.iter(|| rt.block_on(async { manager.get_area_stats(black_box(1)).await }))
+    c.bench_function("count_files", |b| {
+        b.iter(|| rt.block_on(async { manager.count_files(black_box(1)).await }))
     });
 }
 
@@ -201,54 +148,11 @@ fn benchmark_add_file(c: &mut Criterion) {
         b.iter(|| {
             rt.block_on(async {
                 let mut manager = InMemoryFileAreaManager::new();
-                let area = FileArea {
-                    id: 1,
-                    name: "Test Area".to_string(),
-                    description: "Test".to_string(),
-                    path: PathBuf::from("/files/test"),
-                    security_level: SecurityLevel::NEW_USER,
-                    upload_security: SecurityLevel::REGULAR_USER,
-                };
-                manager.create_area(area).await.unwrap();
+                let area = FileArea::new(1, "Test Area".to_string(), "Test".to_string());
+                manager.add_area(area).await.unwrap();
 
-                let file = FileEntry::new(
-                    FileName::new(black_box("test.zip")).unwrap(),
-                    PathBuf::from("/files/test"),
-                )
-                .with_description(black_box("Test file"))
-                .with_uploader(black_box("Alice"))
-                .with_size(black_box(1024));
-
-                manager.add_file(1, file).await
-            })
-        })
-    });
-}
-
-fn benchmark_remove_file(c: &mut Criterion) {
-    let rt = tokio::runtime::Runtime::new().unwrap();
-
-    c.bench_function("remove_file", |b| {
-        b.iter(|| {
-            rt.block_on(async {
-                let mut manager = InMemoryFileAreaManager::new();
-                let area = FileArea {
-                    id: 1,
-                    name: "Test Area".to_string(),
-                    description: "Test".to_string(),
-                    path: PathBuf::from("/files/test"),
-                    security_level: SecurityLevel::NEW_USER,
-                    upload_security: SecurityLevel::REGULAR_USER,
-                };
-                manager.create_area(area).await.unwrap();
-
-                let file = FileEntry::new(
-                    FileName::new("test.zip").unwrap(),
-                    PathBuf::from("/files/test"),
-                );
-                manager.add_file(1, file).await.unwrap();
-
-                manager.remove_file(black_box(1), black_box("test.zip")).await
+                let file = make_file(1, 1, black_box("test.zip"), black_box("Alice"));
+                manager.add_file(file).await
             })
         })
     });
@@ -260,8 +164,7 @@ criterion_group!(
     benchmark_get_files,
     benchmark_get_file,
     benchmark_search_files,
-    benchmark_area_stats,
+    benchmark_count_files,
     benchmark_add_file,
-    benchmark_remove_file
 );
 criterion_main!(benches);
